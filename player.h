@@ -22,13 +22,17 @@ class Player : public Entity {
             Entity(x,y,angle,speed), _fov(P_FOV),_depth(P_DEPTH),_height(height) {}
         
         float getDepth(){return _depth;}
+        float getHeight(){return _height;}
+        void addHeight(){_height += 1;}
+        void lessHeight(){_height -= 1;}
 
         void lookLeft();
         void lookRight();
         void moveForward();
         void moveBackwards();
 
-        float getRayAngle(int col_x, float width);
+        float getRayAngleX(int col_x, float width);
+        float getRayAngleY(int row_y, float height);
 };
 
 #endif

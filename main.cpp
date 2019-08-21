@@ -117,10 +117,15 @@ int main(){
             running=false;            
         }
 
+        if(ch == 'i') plr->addHeight();
+        if(ch == 'l') wall_h += 1;
+        if(ch == 'k') plr->lessHeight();
+        if(ch == 'j') wall_h -= 1;
+
         for(int x = 0; x < SCREEN_W; x++) {
 
             // Calculate the ray angle based on the FOV
-            float rayAngle = plr->getRayAngle(x,SCREEN_W); 
+            float rayAngle = plr->getRayAngleX(x,SCREEN_W); 
 
             // Calculate the distance to the wall
             float stepSize = 0.1f;
@@ -161,13 +166,39 @@ int main(){
 
             // Calculate a shade index based on horizontal distance
             char shade = ' ';
-            int sIdx = colorMapLen * distanceToWall / plr->getDepth();
 
             // Calculate distance from ceiling to floor
-            int ceiling = (float)(SCREEN_H/1.8f) - (SCREEN_H / distanceToWall);
-            int floor   = SCREEN_H - ceiling;
+            //int ceiling = (float)(SCREEN_H/1.8f) - (SCREEN_H / distanceToWall);
+            //int floor   = SCREEN_H - ceiling;
         
             for (int y = 0; y < SCREEN_H; y++){
+
+                // we have a distance
+                // we have an angle??
+                //     _-'|
+                // _-'____|
+
+                // SOH, CAH, TOA
+
+                // TAN(ANG) = OP / ADJ
+                // ADJ * TAN(ANG) = OP
+
+                float yRay = plr->getRayAngleY(y, SCREEN_H);
+                float wallHeight = plr->getHeight() + (10.0f * distanceToWall * tanf(yRay));
+                float newDist = distanceToWall / cosf(yRay);
+
+                // Wall & more??
+                if(wallHeight <= (float)wall_h && wallHeight >= 0) {
+                    int sIdx = colorMapLen * newDist / plr->getDepth();
+                    mvaddch(y,x,colorMap[sIdx]);
+                } else if(wallHeight < 0){
+                    mvaddch(y,x,' ');
+                } else {
+                    mvaddch(y,x,'.');
+                }
+
+                /*
+
                 // each row
                 if(y <= ceiling)
                     mvaddch(y,x,' ');
@@ -175,7 +206,7 @@ int main(){
                     mvaddch(y,x,colorMap[sIdx]);
                 else {
                     mvaddch(y,x,'.');
-                }
+                }*/
             }
         }
 
