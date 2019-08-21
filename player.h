@@ -9,7 +9,7 @@
 
 #define P_DEPTH 16.0f
 #define P_FOV   3.14159f/4.0f
-#define P_HEIGHT 5.0f
+#define P_HEIGHT 3.0f
 
 class Player : public Entity {
     protected:

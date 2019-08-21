@@ -12,8 +12,9 @@ using namespace std;
 // User Headers
 #include "entities.h"
 #include "player.h"
+#include "hand.h"
 
-#define FULL_COLOR
+//#define FULL_COLOR
 
 int main(){
 
@@ -37,29 +38,37 @@ int main(){
     // String container to hold the map
     std::string map =
         "####################" // 1
-        "#..................#" // 2
-        "#..................#" // 3
-        "#..................#" // 4
-        "#..................#" // 5
-        "#..................#" // 6
-        "#..................#" // 7
-        "#####...###........#" // 8
-        "#.........#........#" // 9 
-        "#.........#........#" // 10
-        "#.........#........#" // 11
-        "####################";// 12
+        "#W.......##........#" // 2
+        "#........##...###..#" // 3
+        "#........##...#W#..#" // 4
+        "#........##........#" // 5
+        "#........##........#" // 6
+        "#........##........#" // 7
+        "#........##........#" // 8
+        "##..############..##" // 9 
+        "#.....##...####....#" // 10
+        "#.#...##.#....#....#" // 11
+        "#...#.##.####.#....#" // 12
+        "#.....##.#....#....#" // 13
+        "#..#..##.#.####....#" // 14
+        "#.....##.#....#....#" // 15
+        "#.#...##.####.#....#" // 16
+        "#.....##.#....#....#" // 17
+        "#...#.##.#.........#" // 18
+        "#........#.........#" // 19
+        "####################";// 20
 
     unsigned int map_w = 20;
-    unsigned int map_h = 12;
+    unsigned int map_h = 20;
 
-    unsigned int wall_h = 15;
+    unsigned int wall_h = 6;
 
 #ifdef FULL_COLOR
     char colorMap[] = "BQ@$8%&WMkbdpqZO0UmwaCXhfo#Jzcvun1xt[]{}IlYLi()?r/|\\+<>^!\"*;:,~_-\'`";
     int colorMapLen = 68;
 #else
-    char colorMap[] = "BMZC[lYL/!<:-";
-    int colorMapLen = 14;
+    char colorMap[] = "BMZC[lYL/!<:- ";
+    int colorMapLen = 13;
 #endif
 
     // Need some test points to determine how fast the game is running
@@ -117,10 +126,10 @@ int main(){
             running=false;            
         }
 
-        if(ch == 'i') plr->addHeight();
-        if(ch == 'l') wall_h += 1;
-        if(ch == 'k') plr->lessHeight();
-        if(ch == 'j') wall_h -= 1;
+        //if(ch == 'i') plr->addHeight();
+        //if(ch == 'l') wall_h += 1;
+        //if(ch == 'k') plr->lessHeight();
+        //if(ch == 'j') wall_h -= 1;
 
         for(int x = 0; x < SCREEN_W; x++) {
 
@@ -138,6 +147,9 @@ int main(){
             float eyeX = sinf(rayAngle);
             float eyeY = cosf(rayAngle);
 
+            // Darkness modifier
+            float darknessMod = 1.0f;
+
             // Move the ray along the vector in incriments
             // Use this to determine if we've hit a wall
             // This is the horizontal distance
@@ -147,8 +159,10 @@ int main(){
                 distanceToWall += stepSize;
 
                 // Generate point with the players position as a seed
-                int testX = (int)(plr->getX() + eyeX*distanceToWall);
-                int testY = (int)(plr->getY() + eyeY*distanceToWall);
+                float ftestX = plr->getX() + eyeX*distanceToWall;
+                float ftestY = plr->getY() + eyeY*distanceToWall;
+                int testX = (int) ftestX;
+                int testY = (int) ftestY;
 
                 // Check if the ray has moved out of bounds
                 if(testX<0 || testX > map_w || testY<0 || testY > map_h){
@@ -159,7 +173,18 @@ int main(){
                     if (map.c_str()[testY*map_w + testX] == '#'){
                         hitWall = true;
 
-                        // tutorial does some wacky vector stuff, haha skipping that
+                        float edgeDetectX = abs(ftestX - testX);
+                        float edgeDetectY = abs(ftestY - testY);
+
+                        // Closer to zero, closer to edge
+                        edgeDetectX = min( edgeDetectX, 1.0f - edgeDetectX);
+                        edgeDetectY = min( edgeDetectY, 1.0f - edgeDetectY);
+
+                        // Detect if we're close to the edge and darken it slightly
+                        float thresh = 0.025;
+
+                        if ( edgeDetectX < thresh && edgeDetectY < thresh )
+                            darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
                     }
                 }
             }
@@ -167,10 +192,6 @@ int main(){
             // Calculate a shade index based on horizontal distance
             char shade = ' ';
 
-            // Calculate distance from ceiling to floor
-            //int ceiling = (float)(SCREEN_H/1.8f) - (SCREEN_H / distanceToWall);
-            //int floor   = SCREEN_H - ceiling;
-        
             for (int y = 0; y < SCREEN_H; y++){
 
                 // we have a distance
@@ -189,7 +210,7 @@ int main(){
 
                 // Wall & more??
                 if(wallHeight <= (float)wall_h && wallHeight >= 0) {
-                    int sIdx = colorMapLen * newDist / plr->getDepth();
+                    int sIdx = darknessMod * colorMapLen * newDist / plr->getDepth();
                     mvaddch(y,x,colorMap[sIdx]);
                 } else if(wallHeight < 0){
                     mvaddch(y,x,' ');
@@ -224,6 +245,44 @@ int main(){
         
         // add the player to the screen :)
         mvaddch(plr->getY(),map_w - plr->getX() - 1,'P');
+
+        if (map.c_str()[(int)plr->getY()*map_w + (int)plr->getX()] == 'W'){
+            mvaddstr(-6+SCREEN_H/2.0f,SCREEN_W/2.0f,"+------------------+");
+            mvaddstr(-5+SCREEN_H/2.0f,SCREEN_W/2.0f,"+     You Win!!    +");
+            mvaddstr(-4+SCREEN_H/2.0f,SCREEN_W/2.0f,"+    Congrats :)   +");
+            mvaddstr(-3+SCREEN_H/2.0f,SCREEN_W/2.0f,"+                  +");
+            mvaddstr(-2+SCREEN_H/2.0f,SCREEN_W/2.0f,"+   If you want    +");
+            mvaddstr(-1+SCREEN_H/2.0f,SCREEN_W/2.0f,"+    just press    +");
+            mvaddstr( 0+SCREEN_H/2.0f,SCREEN_W/2.0f,"+       'q'        +");
+            mvaddstr( 1+SCREEN_H/2.0f,SCREEN_W/2.0f,"+     to quit..    +");
+            mvaddstr( 2+SCREEN_H/2.0f,SCREEN_W/2.0f,"+                  +");
+            mvaddstr( 3+SCREEN_H/2.0f,SCREEN_W/2.0f,"+   awesome job    +");
+            mvaddstr( 4+SCREEN_H/2.0f,SCREEN_W/2.0f,"+    by the way    +");
+            mvaddstr( 5+SCREEN_H/2.0f,SCREEN_W/2.0f,"+          haha    +");
+            mvaddstr( 6+SCREEN_H/2.0f,SCREEN_W/2.0f,"+------------------+");
+            nodelay(stdscr, FALSE);
+            char end;
+            while(end != 'q')
+                end = getch();
+            running = false;
+        }
+
+        // Display the hands
+
+        unsigned int hand_offset = 5+ SCREEN_H - hand_height;
+
+        for(int y=0; y < hand_height; y++){
+            move(y+hand_offset,0);
+            for(int x=0; x < hand_width; x++){
+                char curr = hand_image[y*hand_width + x];
+                if(curr != '?'){
+                    addch(curr);
+                } else {
+                    move(y+hand_offset,x+1);
+                }
+            }
+        }
+
 
         // Write buffer
         wrefresh(win);
