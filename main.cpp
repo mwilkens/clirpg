@@ -7,14 +7,11 @@ using namespace std;
 
 // C Headers
 #include <stdio.h>
-#include <ncursesw/ncurses.h>
-#include <locale.h>
+#include <ncurses.h>
 
 // User Headers
 #include "entities.h"
 #include "player.h"
-
-#define _XOPEN_SOURCE_EXTENDED 1
 
 #define FULL_COLOR
 
@@ -33,9 +30,6 @@ int main(){
     noecho();
     // Prevent Delays
     nodelay(stdscr, TRUE);
-
-    // Make sure we can use Unicode :)
-    setlocale (LC_ALL, "");
 
     // Create the window to draw on
     WINDOW * win = newwin(SCREEN_H, SCREEN_W, 0,0);
