@@ -8,6 +8,7 @@ using namespace std;
 // C Headers
 #include <stdio.h>
 #include <ncurses.h>
+#include <time.h>
 
 // User Headers
 #include "entities.h"
@@ -31,14 +32,38 @@ int main(){
     noecho();
     // Prevent Delays
     nodelay(stdscr, TRUE);
+    // Initialize random numbers
+    srand (time(NULL));
 
     // Create the window to draw on
     WINDOW * win = newwin(SCREEN_H, SCREEN_W, 0,0);
 
     // String container to hold the map
     std::string map =
+
         "####################" // 1
-        "#W.......##........#" // 2
+        "#........##........#" // 2
+        "#........##........#" // 3
+        "#........##........#" // 4
+        "#........##........#" // 5
+        "#........##........#" // 6
+        "#........##........#" // 7
+        "#........##........#" // 8
+        "##..############..##" // 9 
+        "#.....###..........#" // 10
+        "#.....####.........#" // 11
+        "#..#..####.........#" // 12
+        "#.....####.........#" // 13
+        "##....####.........#" // 14
+        "#...#.####.........#" // 15
+        "#.....####.........#" // 16
+        "#..#..####.........#" // 17
+        "#.....####.........#" // 18
+        "#.......##.........#" // 19
+        "####################" // 20
+
+        "####################" // 1
+        "#........##........#" // 2
         "#........##...###..#" // 3
         "#........##...#W#..#" // 4
         "#........##........#" // 5
@@ -56,12 +81,41 @@ int main(){
         "#.....##.#....#....#" // 17
         "#...#.##.#.........#" // 18
         "#........#.........#" // 19
-        "####################";// 20
+        "####################" // 20
+
+        "####################" // 1
+        "#FFFFFFFFFFFFFFFFFF#" // 2
+        "#FFFFFFFFFFFFFFFFFF#" // 3
+        "#FFFFFFFFFFFFFFFFFF#" // 4
+        "#FFFFFFFFFFFFFFFFFF#" // 5
+        "#FFFFFFFFFFFFFFFFFF#" // 6
+        "#FFFFFFFFFFFFFFFFFF#" // 7
+        "#FFFFFFFFFFFFFFFFFF#" // 8
+        "#FFFFFFFFFFFFFFFFFF#" // 9 
+        "#FFFFFFFFFFFFFFFFFF#" // 10
+        "#FFFFFFFFFFFFFFFFFF#" // 11
+        "#FFFFFFFFFFFFFFFFFF#" // 12
+        "#FFFFFFFFFFFFFFFFFF#" // 13
+        "#FFFFFFFFFFFFFFFFFF#" // 14
+        "#FFFFFFFFFFFFFFFFFF#" // 15
+        "#FFFFFFFFFFFFFFFFFF#" // 16
+        "#FFFFFFFFFFFFFFFFFF#" // 17
+        "#FFFFFFFFFFFFFFFFFF#" // 18
+        "#FFFFFFFFFFFFFFFFFF#" // 19
+        "####################"; // 20
+
+        
 
     unsigned int map_w = 20;
     unsigned int map_h = 20;
+    unsigned int map_d = 3;
 
-    unsigned int wall_h = 6;
+    char debugbuff[100];
+
+    unsigned int wall_h = 8;
+
+    bool hand_dir = false;
+    bool hand_rand = 0;
 
 #ifdef FULL_COLOR
     char colorMap[] = "BQ@$8%&WMkbdpqZO0UmwaCXhfo#Jzcvun1xt[]{}IlYLi()?r/|\\+<>^!\"*;:,~_-\'`";
@@ -84,6 +138,9 @@ int main(){
     // Create our player
     Player * plr = new Player();
 
+    // step size for the ray tracer
+    float stepSize = 0.08f;
+
     while (running){
         // Calculate the time exactly one frame took
         tp2 = chrono::system_clock::now();
@@ -95,6 +152,15 @@ int main(){
         plr->updateFrame(fElapsedTime);
 
         getmaxyx(stdscr, SCREEN_H, SCREEN_W);
+
+        float fpX = plr->getX();
+        float fpY = plr->getY();
+        float fpZ = plr->getZ();
+        int ipX = (int)floor(fpX);
+        int ipY = (int)floor(fpY);
+        int ipZ = (int)floor(fpZ);
+        int mapOffset = ipZ*map_w*map_h + ipY*map_w + ipX;
+        
 
         // Get Input
         ch = getch();
@@ -108,7 +174,7 @@ int main(){
 
         if(ch == 'W' || ch == 'w'){
             plr->moveForward();
-            if (map.c_str()[(int)plr->getY()*map_w + (int)plr->getX()] == '#')
+            if (map.c_str()[mapOffset] == '#')
 			{
 				plr->moveBackwards();
 			}
@@ -116,7 +182,7 @@ int main(){
 
         if(ch == 'S' || ch == 's'){
             plr->moveBackwards();
-            if (map.c_str()[(int)plr->getY()*map_w + (int)plr->getX()] == '#')
+            if (map.c_str()[mapOffset] == '#')
 			{
 				plr->moveForward();
 			}
@@ -126,97 +192,124 @@ int main(){
             running=false;            
         }
 
-        //if(ch == 'i') plr->addHeight();
+        if(ch == 'i') plr->lookUp();
         //if(ch == 'l') wall_h += 1;
-        //if(ch == 'k') plr->lessHeight();
+        if(ch == 'k') plr->lookDown();
         //if(ch == 'j') wall_h -= 1;
 
         for(int x = 0; x < SCREEN_W; x++) {
 
             // Calculate the ray angle based on the FOV
-            float rayAngle = plr->getRayAngleX(x,SCREEN_W); 
-
-            // Calculate the distance to the wall
-            float stepSize = 0.1f;
-            float distanceToWall = 0.0f;
-
-            // variable to keep track of whether we hit the wall or not
-            bool hitWall = false;
+            float xRay = plr->getRayAngleX(x,SCREEN_W); 
 
             // Create a unit vector based on our ray tracing angle
-            float eyeX = sinf(rayAngle);
-            float eyeY = cosf(rayAngle);
-
-            // Darkness modifier
-            float darknessMod = 1.0f;
-
-            // Move the ray along the vector in incriments
-            // Use this to determine if we've hit a wall
-            // This is the horizontal distance
-            while (!hitWall && distanceToWall < plr->getDepth()){
-
-                // incriment the ray
-                distanceToWall += stepSize;
-
-                // Generate point with the players position as a seed
-                float ftestX = plr->getX() + eyeX*distanceToWall;
-                float ftestY = plr->getY() + eyeY*distanceToWall;
-                int testX = (int) ftestX;
-                int testY = (int) ftestY;
-
-                // Check if the ray has moved out of bounds
-                if(testX<0 || testX > map_w || testY<0 || testY > map_h){
-                    hitWall = true;
-                    distanceToWall = plr->getDepth();
-                } else {
-                    // check if we've hit a wall on the map
-                    if (map.c_str()[testY*map_w + testX] == '#'){
-                        hitWall = true;
-
-                        float edgeDetectX = abs(ftestX - testX);
-                        float edgeDetectY = abs(ftestY - testY);
-
-                        // Closer to zero, closer to edge
-                        edgeDetectX = min( edgeDetectX, 1.0f - edgeDetectX);
-                        edgeDetectY = min( edgeDetectY, 1.0f - edgeDetectY);
-
-                        // Detect if we're close to the edge and darken it slightly
-                        float thresh = 0.025;
-
-                        if ( edgeDetectX < thresh && edgeDetectY < thresh )
-                            darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
-                    }
-                }
-            }
-
-            // Calculate a shade index based on horizontal distance
-            char shade = ' ';
+            float eyeX = sinf(xRay);
+            float eyeY = cosf(xRay);
 
             for (int y = 0; y < SCREEN_H; y++){
 
-                // we have a distance
-                // we have an angle??
-                //     _-'|
-                // _-'____|
-
-                // SOH, CAH, TOA
-
-                // TAN(ANG) = OP / ADJ
-                // ADJ * TAN(ANG) = OP
-
+                // Calculate the ray angle based on the FOV
                 float yRay = plr->getRayAngleY(y, SCREEN_H);
-                float wallHeight = plr->getHeight() + (10.0f * distanceToWall * tanf(yRay));
-                float newDist = distanceToWall / cosf(yRay);
 
-                // Wall & more??
-                if(wallHeight <= (float)wall_h && wallHeight >= 0) {
-                    int sIdx = darknessMod * colorMapLen * newDist / plr->getDepth();
-                    mvaddch(y,x,colorMap[sIdx]);
-                } else if(wallHeight < 0){
-                    mvaddch(y,x,' ');
-                } else {
+                // Create a unit vector based on our ray tracing angle
+                float eyeZ = tanf(yRay);
+
+
+                // Calculate the distance to the wall
+                float distanceToWall = 0.0f;
+
+                // variable to keep track of whether we hit the wall or not
+                bool hitWall = false;
+                bool hitFloor = false;
+                bool hitOOB = false;
+
+                // Darkness modifier
+                float darknessMod = 1.0f;
+
+                // Move the ray along the vector in incriments
+                // Use this to determine if we've hit a wall
+                // This is the horizontal distance
+                while ((!hitOOB || !hitWall || !hitFloor) && distanceToWall < plr->getDepth()){
+
+                    // incriment the ray
+                    distanceToWall += stepSize;
+
+                    // Generate point with the players position as a seed
+                    float ftestX = fpX + eyeX*distanceToWall;
+                    float ftestY = fpY + eyeY*distanceToWall;
+                    float ftestZ = fpZ + 0.5f + eyeZ*distanceToWall;
+                    int testX = (int) (ftestX);
+                    int testY = (int) (ftestY);
+                    int testZ = (int) (ftestZ);
+
+                    // Check if the ray has moved out of bounds
+                    if(ftestX < 0 || ftestX > map_w || ftestY < 0 || ftestY > map_h || ftestZ < 0 || ftestZ > map_d){
+                        hitOOB = true;
+                        distanceToWall = plr->getDepth();
+                        break;
+                    } else {
+
+                        // check if we've hit a wall on the map
+                        if ( map.c_str()[ testZ*map_w*map_h + testY*map_w + testX] == '#') {
+                            hitWall = true;
+                            
+                            
+                            float edgeDetectX = abs(ftestX - testX);
+                            float edgeDetectY = abs(ftestY - testY);
+                            // Closer to zero, closer to edge
+                            edgeDetectX = min( edgeDetectX, 1.0f - edgeDetectX);
+                            edgeDetectY = min( edgeDetectY, 1.0f - edgeDetectY);
+
+                            // Detect if we're close to the edge and darken it slightly
+                            float thresh = 0.025;
+
+                            if ( edgeDetectX < thresh && edgeDetectY < thresh )
+                               darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
+                            
+                            break;
+
+                        }
+
+                        // What if we hit the floor huh.
+                        else if ( map.c_str()[ testZ*map_w*map_h + testY*map_w + testX] == 'F'){
+                            hitFloor = true;
+                            break;
+                        }
+
+                    }
+                } // end of ray tracing loop
+
+                // Calculate a shade index based on horizontal distance
+                char shade = ' ';
+
+                if( hitWall ){
+                    int sIdx = darknessMod * colorMapLen * distanceToWall / plr->getDepth();
+                    //snprintf(debugbuff,100,"sIdx: %d", sIdx);
+                    mvaddch(y,x,colorMap[sIdx+1]);
+                }
+                if(hitFloor) {
                     mvaddch(y,x,'.');
                 }
+                if(hitOOB){
+                    mvaddch(y,x,' ');
+                }
+
+                if(!hitOOB && !hitFloor && !hitWall) {
+                    mvaddch(y,x,'X');
+                }
+
+                //float wallHeight = plr->getHeight() + (10.0f * distanceToWall * tanf(yRay));
+                //float newDist = distanceToWall / cosf(yRay);
+
+                // Wall & more??
+                //if(wallHeight <= (float)wall_h && wallHeight >= 0) {
+                //    int sIdx = darknessMod * colorMapLen * newDist / plr->getDepth();
+                //    mvaddch(y,x,colorMap[sIdx]);
+                //} else if(wallHeight < 0){
+                //    mvaddch(y,x,' ');
+                //} else {
+                //    mvaddch(y,x,'.');
+                //}
 
                 /*
 
@@ -234,19 +327,23 @@ int main(){
 
         // Display Stats
         char buff[100];
-        snprintf(buff,100,"X:%3.2f, Y:%3.2f A:%3.2f, FPS:%3.2f",
-            plr->getX(), plr->getY(), plr->getA(), 1.0f/fElapsedTime);
+        snprintf(buff,100,"X:%3.2f, Y:%3.2f Z:%3.2f, FPS:%3.2f",
+            fpX, fpY, fpZ, 1.0f/fElapsedTime);
         mvaddnstr(0,map_w + 1,buff,100);
+
+
+        // print the debug buffer
+        mvaddnstr(1,map_w + 1,debugbuff,100);
 
         for(int nx = 0; nx < map_w; nx++)
             for(int ny=0; ny < map_h; ny++){
-                mvaddch(ny,nx,map[ny*map_w + (map_w - nx - 1)]);
+                mvaddch(ny,nx,map[ipZ*map_w*map_h + ny*map_w + (map_w - nx - 1)]);
             }
         
         // add the player to the screen :)
-        mvaddch(plr->getY(),map_w - plr->getX() - 1,'P');
+        mvaddch(ipY,map_w - ipX - 1,'P');
 
-        if (map.c_str()[(int)plr->getY()*map_w + (int)plr->getX()] == 'W'){
+        if (map.c_str()[mapOffset] == 'W'){
             mvaddstr(-6+SCREEN_H/2.0f,SCREEN_W/2.0f,"+------------------+");
             mvaddstr(-5+SCREEN_H/2.0f,SCREEN_W/2.0f,"+     You Win!!    +");
             mvaddstr(-4+SCREEN_H/2.0f,SCREEN_W/2.0f,"+    Congrats :)   +");
@@ -269,7 +366,16 @@ int main(){
 
         // Display the hands
 
-        unsigned int hand_offset = 5+ SCREEN_H - hand_height;
+        unsigned int random = rand() % 300;
+
+        if(random == 0){
+            if(hand_rand > 4 || hand_rand < 4){
+                hand_dir = !hand_dir;
+            }
+            hand_rand += hand_dir?1:-1;
+        }
+
+        unsigned int hand_offset = hand_rand + 5 + SCREEN_H - hand_height;
 
         for(int y=0; y < hand_height; y++){
             move(y+hand_offset,0);

@@ -6,6 +6,14 @@ void Player::lookLeft(){
 void Player::lookRight(){
     _a += (_speed * 0.75f) * elapsedTime;
 }
+
+void Player::lookUp(){
+    _ay -= (_speed * 0.75f) * elapsedTime;
+}
+void Player::lookDown(){
+    _ay += (_speed * 0.75f) * elapsedTime;
+}
+
 void Player::moveForward(){
     _x += sinf(_a) * _speed * elapsedTime;
 	_y += cosf(_a) * _speed * elapsedTime;
@@ -20,6 +28,5 @@ float Player::getRayAngleX(int col_x, float width){
 }
 
 float Player::getRayAngleY(int row_y, float height){
-    float yfov = _fov/2.0f;
-    return (yfov * (float)row_y / (float)height) - (yfov/2.0f);
+    return (_ay - _fov/2.0f) + ((float)row_y / (float)height) * _fov;
 }
