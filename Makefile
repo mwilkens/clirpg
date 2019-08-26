@@ -1,7 +1,7 @@
 CXX= g++
-LDFLAGS=ncursesw
+LDFLAGS=ncurses
 DEPS = entites.h player.h
-CFLAGS=-g -Wall
+CFLAGS=-g -Wall -trigraphs
 SRCS = main.cpp player.cpp entities.cpp
 OBJS = $(subst .cpp,.o,$(SRCS))
 
