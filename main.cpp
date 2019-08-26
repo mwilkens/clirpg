@@ -15,14 +15,13 @@ using namespace std;
 #include "player.h"
 #include "hand.h"
 
-#define MAIN_COL 1
+#define MAP_PAIR    1
+#define HANDS_PAIR  2
+#define FLOOR_PAIR  3
+#define SKY_PAIR    4
+#define BORDER_PAIR 5
 
 //#define FULL_COLOR
-
-void printch(int y, int x, char ch, int r, int g, int b){
-    init_color(MAIN_COL, r, g, b);
-    mvaddch(y,x,ch);
-}
 
 int main(){
 
@@ -43,13 +42,20 @@ int main(){
     srand (time(NULL));
 
     if (has_colors() == FALSE) {
-    endwin();
-    printf("Your terminal does not support color\n");
-    exit(1);
+        endwin();
+        printf("Your terminal does not support color\n");
+        exit(1);
     }
 
     // initialize ncurses colors
     start_color();
+
+    init_pair(MAP_PAIR,    COLOR_GREEN, COLOR_BLACK);
+    init_pair(HANDS_PAIR,  COLOR_YELLOW,COLOR_BLACK);
+    init_pair(FLOOR_PAIR,  COLOR_MAGENTA,   COLOR_BLACK);
+    init_pair(SKY_PAIR,    COLOR_BLACK, COLOR_BLACK);
+    init_pair(BORDER_PAIR, COLOR_BLACK, COLOR_WHITE);
+    int currPair = 0;
 
     // Create the window to draw on
     WINDOW * win = newwin(SCREEN_H, SCREEN_W, 0,0);
@@ -155,7 +161,7 @@ int main(){
     Player * plr = new Player();
 
     // step size for the ray tracer
-    float stepSize = 0.08f;
+    float stepSize = 0.05f;
 
     while (running){
         // Calculate the time exactly one frame took
@@ -253,7 +259,7 @@ int main(){
                     // Generate point with the players position as a seed
                     float ftestX = fpX + eyeX*distanceToWall;
                     float ftestY = fpY + eyeY*distanceToWall;
-                    float ftestZ = fpZ + 0.5f + eyeZ*distanceToWall;
+                    float ftestZ = fpZ + 0.3f + eyeZ*distanceToWall;
                     int testX = (int) (ftestX);
                     int testY = (int) (ftestY);
                     int testZ = (int) (ftestZ);
@@ -270,17 +276,24 @@ int main(){
                             hitWall = true;
                             
                             
-                            float edgeDetectX = abs(ftestX - testX);
-                            float edgeDetectY = abs(ftestY - testY);
+                            int edgeDetectX = 1000 * abs(ftestX - testX);
+                            int edgeDetectY = 1000 * abs(ftestY - testY);
+                            int edgeDetectZ = 1000 * abs(ftestZ - testZ);
                             // Closer to zero, closer to edge
-                            edgeDetectX = min( edgeDetectX, 1.0f - edgeDetectX);
-                            edgeDetectY = min( edgeDetectY, 1.0f - edgeDetectY);
+                            edgeDetectX = min( edgeDetectX, 1000 - edgeDetectX);
+                            edgeDetectY = min( edgeDetectY, 1000 - edgeDetectY);
+                            edgeDetectZ = min( edgeDetectZ, 1000 - edgeDetectZ);
 
                             // Detect if we're close to the edge and darken it slightly
-                            float thresh = 0.025;
+                            float thresh = 50;
 
-                            if ( edgeDetectX < thresh && edgeDetectY < thresh )
-                               darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
+                            if ( edgeDetectX < thresh && edgeDetectY < thresh ||
+                                 edgeDetectX < thresh && edgeDetectZ < thresh ||
+                                 edgeDetectY < thresh && edgeDetectZ < thresh){
+                               //darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
+                               attron(COLOR_PAIR(BORDER_PAIR));
+                               currPair = BORDER_PAIR;
+                            }
                             
                             break;
 
@@ -304,9 +317,13 @@ int main(){
                     mvaddch(y,x,colorMap[sIdx+1]);
                 }
                 if(hitFloor) {
-                    mvaddch(y,x,'.');
+                    attron(COLOR_PAIR(FLOOR_PAIR));
+                    currPair = FLOOR_PAIR;
+                    mvaddch(y,x,x%2==y%2?'#':'-');
                 }
                 if(hitOOB){
+                    attron(COLOR_PAIR(SKY_PAIR));
+                    currPair = SKY_PAIR;
                     mvaddch(y,x,' ');
                 }
 
@@ -314,29 +331,9 @@ int main(){
                     mvaddch(y,x,'X');
                 }
 
-                //float wallHeight = plr->getHeight() + (10.0f * distanceToWall * tanf(yRay));
-                //float newDist = distanceToWall / cosf(yRay);
-
-                // Wall & more??
-                //if(wallHeight <= (float)wall_h && wallHeight >= 0) {
-                //    int sIdx = darknessMod * colorMapLen * newDist / plr->getDepth();
-                //    mvaddch(y,x,colorMap[sIdx]);
-                //} else if(wallHeight < 0){
-                //    mvaddch(y,x,' ');
-                //} else {
-                //    mvaddch(y,x,'.');
-                //}
-
-                /*
-
-                // each row
-                if(y <= ceiling)
-                    mvaddch(y,x,' ');
-                else if( y > ceiling && y <= floor)
-                    mvaddch(y,x,colorMap[sIdx]);
-                else {
-                    mvaddch(y,x,'.');
-                }*/
+                if(currPair != 0)
+                    attroff(COLOR_PAIR(currPair));
+                currPair = 0;
             }
         }
 
@@ -351,13 +348,17 @@ int main(){
         // print the debug buffer
         mvaddnstr(1,map_w + 1,debugbuff,100);
 
-        for(int nx = 0; nx < map_w; nx++)
-            for(int ny=0; ny < map_h; ny++){
-                mvaddch(ny,nx,map[ipZ*map_w*map_h + ny*map_w + (map_w - nx - 1)]);
-            }
-        
-        // add the player to the screen :)
-        mvaddch(ipY,map_w - ipX - 1,'P');
+        {
+            attron(COLOR_PAIR(MAP_PAIR));
+            for(int nx = 0; nx < map_w; nx++)
+                for(int ny=0; ny < map_h; ny++){
+                    mvaddch(ny,nx,map[ipZ*map_w*map_h + ny*map_w + (map_w - nx - 1)]);
+                }
+            
+            // add the player to the screen :)
+            mvaddch(ipY,map_w - ipX - 1,'P');
+            attroff(COLOR_PAIR(MAP_PAIR));
+        }
 
         if (map.c_str()[mapOffset] == 'W'){
             mvaddstr(-6+SCREEN_H/2.0f,SCREEN_W/2.0f,"+------------------+");
@@ -393,18 +394,22 @@ int main(){
 
         unsigned int hand_offset = hand_rand + 5 + SCREEN_H - hand_height;
 
-        for(int y=0; y < hand_height; y++){
-            move(y+hand_offset,0);
-            for(int x=0; x < hand_width; x++){
-                char curr = hand_image[y*hand_width + x];
-                if(curr != '?'){
-                    addch(curr);
-                } else {
-                    move(y+hand_offset,x+1);
+
+        {
+            attron(COLOR_PAIR(HANDS_PAIR));
+            for(int y=0; y < hand_height; y++){
+                move(y+hand_offset,0);
+                for(int x=0; x < hand_width; x++){
+                    char curr = hand_image[y*hand_width + x];
+                    if(curr != '?'){
+                        addch(curr);
+                    } else {
+                        move(y+hand_offset,x+1);
+                    }
                 }
             }
+            attroff(COLOR_PAIR(HANDS_PAIR));
         }
-
 
         // Write buffer
         wrefresh(win);
