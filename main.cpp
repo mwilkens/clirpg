@@ -15,7 +15,14 @@ using namespace std;
 #include "player.h"
 #include "hand.h"
 
+#define MAIN_COL 1
+
 //#define FULL_COLOR
+
+void printch(int y, int x, char ch, int r, int g, int b){
+    init_color(MAIN_COL, r, g, b);
+    mvaddch(y,x,ch);
+}
 
 int main(){
 
@@ -34,6 +41,15 @@ int main(){
     nodelay(stdscr, TRUE);
     // Initialize random numbers
     srand (time(NULL));
+
+    if (has_colors() == FALSE) {
+    endwin();
+    printf("Your terminal does not support color\n");
+    exit(1);
+    }
+
+    // initialize ncurses colors
+    start_color();
 
     // Create the window to draw on
     WINDOW * win = newwin(SCREEN_H, SCREEN_W, 0,0);
