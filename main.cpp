@@ -238,6 +238,9 @@ int main(){
     // Some internal variables for the game engine
     char ch;
     bool running=true;
+    int pressedKeys[10]; // only allow 10 keys to be pressed at once
+    int numKeys = 0;
+
 
     move(0,0);
 
@@ -270,42 +273,57 @@ int main(){
 
         // Get Input
         ch = getch();
-
-
-        if(ch == 'A' || ch == 'a'){
-            plr->lookLeft();
+        while (ch != ERR){
+            pressedKeys[numKeys] = ch;
+            numKeys++;
+            if(numKeys == 10) numKeys = 0;
+            ch = getch();
         }
+        
+        for(int i = 0; i < numKeys; i++){
+            switch(pressedKeys[i]){
+                case 'A':
+                case 'a':
+                    plr->lookLeft();
+                    break;
+                case 'D':
+                case 'd':
+                    plr->lookRight();
+                    break;
 
-        if(ch == 'D' || ch == 'd'){
-            plr->lookRight();
+                case 'W':
+                case 'w':
+                    plr->moveForward();
+                    if (map.c_str()[mapOffset] == '#'){
+		        plr->moveBackwards();
+                        plr->moveBackwards();
+		    }
+                    break;
+
+                case 'S':
+                case 's':
+                    plr->moveBackwards();
+                    if (map.c_str()[mapOffset] == '#'){
+		        plr->moveForward();
+                        plr->moveForward();
+		    }
+                    break;
+
+
+                case 'i':
+                    plr->lookUp();
+                    break;
+                case 'k':
+                    plr->lookDown();
+                    break;
+                case 'Q':
+                case 'q':
+                    running = false;
+                    break;
+                default:
+                    break;
+            }
         }
-
-        if(ch == 'W' || ch == 'w'){
-            plr->moveForward();
-            if (map.c_str()[mapOffset] == '#')
-			{
-				plr->moveBackwards();
-                plr->moveBackwards();
-			}
-        }
-
-        if(ch == 'S' || ch == 's'){
-            plr->moveBackwards();
-            if (map.c_str()[mapOffset] == '#')
-			{
-				plr->moveForward();
-                plr->moveForward();
-			}
-        }
-
-        if(ch == 'Q' || ch == 'q'){
-            running=false;            
-        }
-
-        if(ch == 'i') plr->lookUp();
-        //if(ch == 'l') wall_h += 1;
-        if(ch == 'k') plr->lookDown();
-        //if(ch == 'j') wall_h -= 1;
 
         for(int x = 0; x < SCREEN_W; x++) {
 
