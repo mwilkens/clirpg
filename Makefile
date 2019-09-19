@@ -1,5 +1,5 @@
 CXX= g++
-LDFLAGS=ncurses
+LDFLAGS=-lX11 -lGL -lpthread -lpng
 DEPS = entites.h player.h
 CFLAGS=-g -Wall -Wno-trigraphs
 SRCS = main.cpp player.cpp entities.cpp
@@ -11,7 +11,7 @@ TARGET = clirpg
 	$(CXX) -c -o $% $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CXX) -o $@ $^ $(CFLAGS) -l$(LDFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 .PHONY: clean
 

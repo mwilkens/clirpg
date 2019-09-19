@@ -1,10 +1,10 @@
 #include "player.h"
 
 void Player::lookLeft(){
-    _a -= (_speed * 0.75f) * elapsedTime;
+    _a -= _speed * elapsedTime;
 }
 void Player::lookRight(){
-    _a += (_speed * 0.75f) * elapsedTime;
+    _a += _speed * elapsedTime;
 }
 
 void Player::lookUp(){

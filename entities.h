@@ -17,7 +17,7 @@ class Entity{
         static float elapsedTime;
     public:
         Entity():
-            _x(2.0f),_y(2.0f),_z(5.0f),_a(0.0f),_ay(0.0f),_speed(10.0f){}
+            _x(2.0f),_y(2.0f),_z(5.0f),_a(0.0f),_ay(0.0f),_speed(2.0f){}
         Entity(float x, float y, float z, float angle, float speed):
             _x(x),_y(y), _z(z), _a(angle),_speed(speed),_ay(0.0f) {}
 
@@ -26,6 +26,12 @@ class Entity{
         float getZ(){return _z;}
         float getA(){return _a;}
         float getAY(){return _ay;}
+
+        void setX(float x){_x = x;}
+        void setY(float y){_y = y;}
+        void setZ(float z){_z = z;}
+        void setA(float a){_a = a;}
+        void setAY(float ay){_ay = ay;}
 
         void updateFrame(float time){
             elapsedTime = time;

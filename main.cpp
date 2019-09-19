@@ -2,265 +2,206 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <chrono>
 using namespace std;
 
 // C Headers
 #include <stdio.h>
-#include <ncurses.h>
 #include <time.h>
 
 // User Headers
+#define OLC_PGE_APPLICATION
+#include "olcPixelGameEngine.h"
 #include "entities.h"
 #include "player.h"
 #include "hand.h"
 
-#define MAP_PAIR    1
-#define HANDS_PAIR  2
-#define FLOOR_PAIR  3
-#define SKY_PAIR    4
-#define BORDER_PAIR 5
+#define SCREEN_W 480
+#define SCREEN_H 240
 
-//#define FULL_COLOR
+const char colorMap[] = "BMZC[lYL/!<:- ";
+const int colorMapLen = 13;
 
-int main(){
+class clirpg : public olc::PixelGameEngine {
+    public:
 
-    unsigned int SCREEN_W = 120;
-    unsigned int SCREEN_H = 40;
+        std::string map;
+        unsigned int map_w;
+        unsigned int map_h;
+        unsigned int map_d;
+        Player * plr;
 
-    // Initialize ncurses mode
-    initscr();
-    // Disable line buffering
-    raw();
-    // Enable keypresses
-    keypad(stdscr, TRUE);
-    // Disable key echoing
-    noecho();
-    // Prevent Delays
-    nodelay(stdscr, TRUE);
-    // Initialize random numbers
-    srand (time(NULL));
+        clirpg() {
+            sAppName = "clirpg";
+        }
 
-    if (has_colors() == FALSE) {
-        endwin();
-        printf("Your terminal does not support color\n");
-        exit(1);
+	    bool OnUserCreate() override {
+		// Called once at the start, so create things here
+
+        // String container to hold the map
+        //TODO: Make this procedurally generated
+        map =
+
+            "..............###..." // 1
+            "..............###..." // 2
+            "..............###..." // 3
+            "...................." // 4
+            "...................." // 5
+            "...................." // 6
+            "...................." // 7
+            "...................." // 8
+            "...................." // 9 
+            "...................." // 10
+            "...................." // 11
+            "...................." // 12
+            "...................." // 13
+            "....###............." // 14
+            "....###............." // 15
+            "...................." // 16
+            "...................." // 17
+            "...................." // 18
+            "...................." // 19
+            "...................." // 20
+        
+            "..............###..." // 1
+            "..............###..." // 2
+            "..............###..." // 3
+            "...................." // 4
+            "...................." // 5
+            "...................." // 6
+            "...................." // 7
+            "...................." // 8
+            "...................." // 9 
+            "...................." // 10
+            "...................." // 11
+            "...................." // 12
+            "....###............." // 13
+            "...#####............" // 14
+            "...#####............" // 15
+            "....###............." // 16
+            "...................." // 17
+            "...................." // 18
+            "...................." // 19
+            "...................." // 20
+
+            "..............###..." // 1
+            "..............###..." // 2
+            "..............###..." // 3
+            "...................." // 4
+            "...................." // 5
+            "...................." // 6
+            "...................." // 7
+            "...................." // 8
+            "...................." // 9 
+            "...................." // 10
+            "....###............." // 11
+            "...#####............" // 12
+            "..#######..........." // 13
+            "..#######..........." // 14
+            "..#######..........." // 15
+            "..#######..........." // 16
+            "...#####............" // 17
+            "....###............." // 18
+            "...................." // 19
+            "...................." // 20
+
+            "####################" // 1
+            "#.............###..#" // 2
+            "#.............###..#" // 3
+            "#..................#" // 4
+            "#..................#" // 5
+            "#..................#" // 6
+            "#..................#" // 7
+            "#..................#" // 8
+            "####################" // 9 
+            "##########.........#" // 10
+            "##########.........#" // 11
+            "##########.........#" // 12
+            "##########.........#" // 13
+            "##########.........#" // 14
+            "##########.........#" // 15
+            "##########.........#" // 16
+            "##########.........#" // 17
+            "##########.........#" // 18
+            "##########.........#" // 19
+            "####################" // 20
+
+            "####################" // 1
+            "#........##...###..#" // 2
+            "#........##...#.#..#" // 3
+            "#........##........#" // 4
+            "#........##........#" // 5
+            "#........##........#" // 6
+            "#........##........#" // 7
+            "#........##........#" // 8
+            "##..############..##" // 9 
+            "#.....###..........#" // 10
+            "#.....####.........#" // 11
+            "#..#..####.........#" // 12
+            "#.....####.........#" // 13
+            "##....####.........#" // 14
+            "#...#.####.........#" // 15
+            "#.....####.........#" // 16
+            "#..#..####.........#" // 17
+            "#.....####.........#" // 18
+            "#.......##.........#" // 19
+            "####################" // 20
+
+            "####################" // 1
+            "#........##...###..#" // 2
+            "#........##...#W#..#" // 3
+            "#........##...#.#..#" // 4
+            "#........##........#" // 5
+            "#........##........#" // 6
+            "#........##........#" // 7
+            "#........##........#" // 8
+            "##..############..##" // 9 
+            "#.....##...####....#" // 10
+            "#.#...##.#....#....#" // 11
+            "#...#.##.####.#....#" // 12
+            "#.....##.#....#....#" // 13
+            "#..#..##.#.####....#" // 14
+            "#.....##.#....#....#" // 15
+            "#.#...##.####.#....#" // 16
+            "#.....##.#....#....#" // 17
+            "#...#.##.#.........#" // 18
+            "#........#.........#" // 19
+            "####################" // 20
+
+            "####################" // 1
+            "#FFFFFFFFFFFFFFFFFF#" // 2
+            "#FFFFFFFFFFFFFFFFFF#" // 3
+            "#FFFFFFFFFFFFFFFFFF#" // 4
+            "#FFFFFFFFFFFFFFFFFF#" // 5
+            "#FFFFFFFFFFFFFFFFFF#" // 6
+            "#FFFFFFFFFFFFFFFFFF#" // 7
+            "#FFFFFFFFFFFFFFFFFF#" // 8
+            "#FFFFFFFFFFFFFFFFFF#" // 9 
+            "#FFFFFFFFFFFFFFFFFF#" // 10
+            "#FFFFFFFFFFFFFFFFFF#" // 11
+            "#FFFFFFFFFFFFFFFFFF#" // 12
+            "#FFFFFFFFFFFFFFFFFF#" // 13
+            "#FFFFFFFFFFFFFFFFFF#" // 14
+            "#FFFFFFFFFFFFFFFFFF#" // 15
+            "#FFFFFFFFFFFFFFFFFF#" // 16
+            "#FFFFFFFFFFFFFFFFFF#" // 17
+            "#FFFFFFFFFFFFFFFFFF#" // 18
+            "#FFFFFFFFFFFFFFFFFF#" // 19
+            "####################"; // 20
+
+        map_w = 20; map_h = 20; map_d = 7;
+
+        plr = new Player();
+
+		return true;
+	}
+
+    ~clirpg(){
+        delete plr;
     }
 
-    // initialize ncurses colors
-    start_color();
-
-    init_pair(MAP_PAIR,    COLOR_GREEN, COLOR_BLACK);
-    init_pair(HANDS_PAIR,  COLOR_YELLOW,COLOR_BLACK);
-    init_pair(FLOOR_PAIR,  COLOR_MAGENTA,   COLOR_BLACK);
-    init_pair(SKY_PAIR,    COLOR_BLACK, COLOR_BLACK);
-    init_pair(BORDER_PAIR, COLOR_BLACK, COLOR_WHITE);
-    int currPair = 0;
-
-    // Create the window to draw on
-    WINDOW * win = newwin(SCREEN_H, SCREEN_W, 0,0);
-
-    // String container to hold the map
-    std::string map =
-
-        "..............###..." // 1
-        "..............###..." // 2
-        "..............###..." // 3
-        "...................." // 4
-        "...................." // 5
-        "...................." // 6
-        "...................." // 7
-        "...................." // 8
-        "...................." // 9 
-        "...................." // 10
-        "...................." // 11
-        "...................." // 12
-        "...................." // 13
-        "....###............." // 14
-        "....###............." // 15
-        "...................." // 16
-        "...................." // 17
-        "...................." // 18
-        "...................." // 19
-        "...................." // 20
-    
-        "..............###..." // 1
-        "..............###..." // 2
-        "..............###..." // 3
-        "...................." // 4
-        "...................." // 5
-        "...................." // 6
-        "...................." // 7
-        "...................." // 8
-        "...................." // 9 
-        "...................." // 10
-        "...................." // 11
-        "...................." // 12
-        "....###............." // 13
-        "...#####............" // 14
-        "...#####............" // 15
-        "....###............." // 16
-        "...................." // 17
-        "...................." // 18
-        "...................." // 19
-        "...................." // 20
-
-        "..............###..." // 1
-        "..............###..." // 2
-        "..............###..." // 3
-        "...................." // 4
-        "...................." // 5
-        "...................." // 6
-        "...................." // 7
-        "...................." // 8
-        "...................." // 9 
-        "...................." // 10
-        "....###............." // 11
-        "...#####............" // 12
-        "..#######..........." // 13
-        "..#######..........." // 14
-        "..#######..........." // 15
-        "..#######..........." // 16
-        "...#####............" // 17
-        "....###............." // 18
-        "...................." // 19
-        "...................." // 20
-
-        "####################" // 1
-        "#.............###..#" // 2
-        "#.............###..#" // 3
-        "#..................#" // 4
-        "#..................#" // 5
-        "#..................#" // 6
-        "#..................#" // 7
-        "#..................#" // 8
-        "####################" // 9 
-        "##########.........#" // 10
-        "##########.........#" // 11
-        "##########.........#" // 12
-        "##########.........#" // 13
-        "##########.........#" // 14
-        "##########.........#" // 15
-        "##########.........#" // 16
-        "##########.........#" // 17
-        "##########.........#" // 18
-        "##########.........#" // 19
-        "####################" // 20
-
-        "####################" // 1
-        "#........##...###..#" // 2
-        "#........##...#.#..#" // 3
-        "#........##........#" // 4
-        "#........##........#" // 5
-        "#........##........#" // 6
-        "#........##........#" // 7
-        "#........##........#" // 8
-        "##..############..##" // 9 
-        "#.....###..........#" // 10
-        "#.....####.........#" // 11
-        "#..#..####.........#" // 12
-        "#.....####.........#" // 13
-        "##....####.........#" // 14
-        "#...#.####.........#" // 15
-        "#.....####.........#" // 16
-        "#..#..####.........#" // 17
-        "#.....####.........#" // 18
-        "#.......##.........#" // 19
-        "####################" // 20
-
-        "####################" // 1
-        "#........##...###..#" // 2
-        "#........##...#W#..#" // 3
-        "#........##...#.#..#" // 4
-        "#........##........#" // 5
-        "#........##........#" // 6
-        "#........##........#" // 7
-        "#........##........#" // 8
-        "##..############..##" // 9 
-        "#.....##...####....#" // 10
-        "#.#...##.#....#....#" // 11
-        "#...#.##.####.#....#" // 12
-        "#.....##.#....#....#" // 13
-        "#..#..##.#.####....#" // 14
-        "#.....##.#....#....#" // 15
-        "#.#...##.####.#....#" // 16
-        "#.....##.#....#....#" // 17
-        "#...#.##.#.........#" // 18
-        "#........#.........#" // 19
-        "####################" // 20
-
-        "####################" // 1
-        "#FFFFFFFFFFFFFFFFFF#" // 2
-        "#FFFFFFFFFFFFFFFFFF#" // 3
-        "#FFFFFFFFFFFFFFFFFF#" // 4
-        "#FFFFFFFFFFFFFFFFFF#" // 5
-        "#FFFFFFFFFFFFFFFFFF#" // 6
-        "#FFFFFFFFFFFFFFFFFF#" // 7
-        "#FFFFFFFFFFFFFFFFFF#" // 8
-        "#FFFFFFFFFFFFFFFFFF#" // 9 
-        "#FFFFFFFFFFFFFFFFFF#" // 10
-        "#FFFFFFFFFFFFFFFFFF#" // 11
-        "#FFFFFFFFFFFFFFFFFF#" // 12
-        "#FFFFFFFFFFFFFFFFFF#" // 13
-        "#FFFFFFFFFFFFFFFFFF#" // 14
-        "#FFFFFFFFFFFFFFFFFF#" // 15
-        "#FFFFFFFFFFFFFFFFFF#" // 16
-        "#FFFFFFFFFFFFFFFFFF#" // 17
-        "#FFFFFFFFFFFFFFFFFF#" // 18
-        "#FFFFFFFFFFFFFFFFFF#" // 19
-        "####################"; // 20
-
-        
-
-    unsigned int map_w = 20;
-    unsigned int map_h = 20;
-    unsigned int map_d = 7;
-
-    char debugbuff[100];
-
-    unsigned int wall_h = 8;
-
-    bool hand_dir = false;
-    bool hand_rand = 0;
-
-#ifdef FULL_COLOR
-    char colorMap[] = "BQ@$8%&WMkbdpqZO0UmwaCXhfo#Jzcvun1xt[]{}IlYLi()?r/|\\+<>^!\"*;:,~_-\'`";
-    int colorMapLen = 68;
-#else
-    char colorMap[] = "BMZC[lYL/!<:- ";
-    int colorMapLen = 13;
-#endif
-
-    // Need some test points to determine how fast the game is running
-    auto tp1 = chrono::system_clock::now();
-    auto tp2 = chrono::system_clock::now();
-
-    // Some internal variables for the game engine
-    char ch;
-    bool running=true;
-    int pressedKeys[10]; // only allow 10 keys to be pressed at once
-    int numKeys = 0;
-
-
-    move(0,0);
-
-    // Create our player
-    Player * plr = new Player();
-
-    // step size for the ray tracer
-    float stepSize = 0.05f;
-
-    while (running){
-        // Calculate the time exactly one frame took
-        tp2 = chrono::system_clock::now();
-		chrono::duration<float> elapsedTime = tp2 - tp1;
-		tp1 = tp2;
-		float fElapsedTime = elapsedTime.count();
-
-        // Update the speed (does for all entities)
-        plr->updateFrame(fElapsedTime);
-
-        getmaxyx(stdscr, SCREEN_H, SCREEN_W);
+	bool OnUserUpdate(float fElapsedTime) override
+	{
+		plr->updateFrame(fElapsedTime);
 
         float fpX = plr->getX();
         float fpY = plr->getY();
@@ -269,62 +210,44 @@ int main(){
         int ipY = (int)floor(fpY);
         int ipZ = (int)floor(fpZ);
         int mapOffset = ipZ*map_w*map_h + ipY*map_w + ipX;
-        
 
-        // Get Input
-        numKeys = 0; // reset numKeys
-        ch = getch();
-        while (ch != ERR){
-            pressedKeys[numKeys] = ch;
-            numKeys++;
-            if(numKeys == 10) numKeys = 0;
-            ch = getch();
+        // Handle input
+
+        if( GetKey(olc::Q).bPressed){
+            return 0;
         }
-        
-        for(int i = 0; i < numKeys; i++){
-            switch(pressedKeys[i]){
-                case 'A':
-                case 'a':
-                    plr->lookLeft();
-                    break;
-                case 'D':
-                case 'd':
-                    plr->lookRight();
-                    break;
 
-                case 'W':
-                case 'w':
-                    plr->moveForward();
-                    if (map.c_str()[mapOffset] == '#'){
-		        plr->moveBackwards();
-                        plr->moveBackwards();
-		    }
-                    break;
+        if( GetKey(olc::A).bHeld){
+            plr->lookLeft();
+        }
 
-                case 'S':
-                case 's':
-                    plr->moveBackwards();
-                    if (map.c_str()[mapOffset] == '#'){
-		        plr->moveForward();
-                        plr->moveForward();
-		    }
-                    break;
+        if( GetKey(olc::D).bHeld){
+            plr->lookRight();
+        }
 
-
-                case 'i':
-                    plr->lookUp();
-                    break;
-                case 'k':
-                    plr->lookDown();
-                    break;
-                case 'Q':
-                case 'q':
-                    running = false;
-                    break;
-                default:
-                    break;
+        if( GetKey(olc::W).bHeld){
+            float x = plr->getX();
+            float y = plr->getY();
+            plr->moveForward();
+            if (map.c_str()[mapOffset] == '#'){
+                // reset character position
+                plr->setX(x); plr->setY(y);
+                plr->moveBackwards();
             }
         }
+
+        if( GetKey(olc::S).bHeld){
+            float x = plr->getX();
+            float y = plr->getY();
+            plr->moveBackwards();
+            if (map.c_str()[mapOffset] == '#'){
+                // reset character position
+                plr->setX(x); plr->setY(y);
+                plr->moveForward();
+            }
+        }
+
+        // Do raytracing
 
         for(int x = 0; x < SCREEN_W; x++) {
 
@@ -361,7 +284,7 @@ int main(){
                 while ((!hitOOB || !hitWall || !hitFloor) && distanceToWall < plr->getDepth()){
 
                     // incriment the ray
-                    distanceToWall += stepSize;
+                    distanceToWall += 0.25; // step size
 
                     // Generate point with the players position as a seed
                     float ftestX = fpX + eyeX*distanceToWall;
@@ -397,9 +320,9 @@ int main(){
                             if ( edgeDetectX < thresh && edgeDetectY < thresh ||
                                  edgeDetectX < thresh && edgeDetectZ < thresh ||
                                  edgeDetectY < thresh && edgeDetectZ < thresh){
-                               //darknessMod += 64.0f * (edgeDetectX + edgeDetectY) / distanceToWall;
-                               attron(COLOR_PAIR(BORDER_PAIR));
-                               currPair = BORDER_PAIR;
+                               darknessMod = 0.8;
+                               
+                               // DETECT BORDER
                             }
                             
                             break;
@@ -419,31 +342,50 @@ int main(){
                 char shade = ' ';
 
                 if( hitWall ){
-                    int sIdx = darknessMod * colorMapLen * distanceToWall / plr->getDepth();
+                    int sIdx = 100 - (darknessMod * 100 * distanceToWall / plr->getDepth());
                     //snprintf(debugbuff,100,"sIdx: %d", sIdx);
-                    mvaddch(y,x,colorMap[sIdx+1]);
+                    //mvaddch(y,x,colorMap[sIdx+1]);
+                    Draw(x, y, olc::Pixel(sIdx,sIdx,sIdx));
                 }
                 if(hitFloor) {
-                    attron(COLOR_PAIR(FLOOR_PAIR));
-                    currPair = FLOOR_PAIR;
-                    mvaddch(y,x,x%2==y%2?'#':'-');
+                    //mvaddch(y,x,x%2==y%2?'#':'-');
+                    Draw(x, y, olc::DARK_MAGENTA);
                 }
                 if(hitOOB){
-                    attron(COLOR_PAIR(SKY_PAIR));
-                    currPair = SKY_PAIR;
-                    mvaddch(y,x,' ');
+                    //mvaddch(y,x,' ');
+                    Draw(x, y, olc::Pixel(0,0,0));
                 }
 
                 if(!hitOOB && !hitFloor && !hitWall) {
-                    mvaddch(y,x,' ');
+                    //mvaddch(y,x,' ');
+                    Draw(x, y, olc::Pixel(0,0,0));
                 }
-
-                if(currPair != 0)
-                    attroff(COLOR_PAIR(currPair));
-                currPair = 0;
             }
         }
 
+		return true;
+	}
+};
+
+// Main loop
+int main(){
+
+    clirpg Game;
+
+    if (Game.Construct(SCREEN_W,SCREEN_H,4,4))
+        Game.Start();
+
+    return 0;
+
+}
+
+/*
+/// everything after here is too much
+{
+    bool hand_dir = false;
+    bool hand_rand = 0;
+
+    while (running){
 
         // Display Stats
         char buff[100];
@@ -530,3 +472,5 @@ int main(){
 
     return 0;
 }
+
+*/
