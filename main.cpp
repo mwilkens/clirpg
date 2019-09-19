@@ -272,6 +272,7 @@ int main(){
         
 
         // Get Input
+        numKeys = 0; // reset numKeys
         ch = getch();
         while (ch != ERR){
             pressedKeys[numKeys] = ch;

@@ -8,10 +8,10 @@ void Player::lookRight(){
 }
 
 void Player::lookUp(){
-    _ay -= (_speed * 0.75f) * elapsedTime;
+    _ay -= (_speed * 0.50f) * elapsedTime;
 }
 void Player::lookDown(){
-    _ay += (_speed * 0.75f) * elapsedTime;
+    _ay += (_speed * 0.50f) * elapsedTime;
 }
 
 void Player::moveForward(){
